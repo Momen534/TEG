@@ -1,0 +1,990 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transparent PNG Studio</title>
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- JSZip for batch downloads -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        /* CSS Reset and Base Styles */
+        :root {
+            --bg-grad-1: #0b1120;
+            --bg-grad-2: #1f2a47;
+            --bg-grad-3: #2e3a59;
+            --accent-color: #3b82f6;
+            --accent-color-hover: #2563eb;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --panel-bg: rgba(255, 255, 255, 0.05);
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --card-bg: rgba(30, 41, 59, 0.5);
+            --card-hover-bg: rgba(51, 65, 85, 0.7);
+            --card-border: rgba(255, 255, 255, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.3);
+            --font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            --border-radius: 12px;
+            --transition-speed: 0.3s;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background: linear-gradient(135deg, var(--bg-grad-1), var(--bg-grad-2), var(--bg-grad-3));
+            background-size: 200% 200%;
+            color: var(--text-primary);
+            margin: 0;
+            padding: 2rem 1rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: gradient-animation 20s ease infinite;
+            overflow-x: hidden;
+        }
+
+        @keyframes gradient-animation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Main Container & Layout */
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .app-header {
+            text-align: center;
+            margin-bottom: 2.5rem;
+        }
+        .app-header h1 {
+            font-size: 2.5rem;
+            margin: 0;
+            font-weight: 700;
+        }
+        .app-header .tagline {
+            color: var(--text-secondary);
+            margin-top: 0.5rem;
+            font-size: 1rem;
+        }
+        
+        .header-controls {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+        
+        .info-button, .rtl-toggle {
+            position: relative;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            color: var(--text-secondary);
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .info-button:hover, .rtl-toggle:hover {
+            background: var(--accent-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .info-button .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            width: 220px;
+            background-color: var(--bg-grad-1);
+            color: #fff;
+            text-align: center;
+            border-radius: 6px;
+            padding: 8px;
+            position: absolute;
+            z-index: 10;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -110px;
+            transition: opacity var(--transition-speed) ease;
+            box-shadow: 0 5px 15px var(--shadow-color);
+            border: 1px solid var(--panel-border);
+            font-size: 0.875rem;
+        }
+
+        .info-button:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        /* Stepper Guide */
+        .stepper {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+        .stepper span {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            opacity: 0.7;
+        }
+        .stepper span .step-number {
+            border: 2px solid var(--text-secondary);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+        }
+
+        /* Presets Grid */
+        .presets-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .preset-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            text-align: center;
+            cursor: pointer;
+            transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease, background-color var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .preset-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px var(--shadow-color);
+            background: var(--card-hover-bg);
+        }
+
+        .preset-card.selected {
+            box-shadow: 0 0 0 2px var(--accent-color), 0 10px 20px var(--shadow-color);
+            background: var(--card-hover-bg);
+        }
+        
+        .check-icon {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            width: 24px;
+            height: 24px;
+            background-color: var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: scale(0);
+            opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity var(--transition-speed) ease;
+        }
+
+        .preset-card.selected .check-icon {
+            transform: scale(1);
+            opacity: 1;
+        }
+        
+        .preset-card .thumbnail {
+            margin: 0 auto 1rem;
+            border: 2px solid var(--text-secondary);
+            background: rgba(0,0,0,0.2);
+            border-radius: 4px;
+            opacity: 0.6;
+        }
+
+        .preset-card h3 {
+            margin: 0 0 0.25rem 0;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .preset-card p {
+            margin: 0;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        /* Main Panel */
+        .main-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 2rem;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 15px 30px var(--shadow-color);
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        /* Controls Area */
+        .controls h2 {
+            margin-top: 0;
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .size-inputs {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .input-wrapper {
+            position: relative;
+            flex-grow: 1;
+        }
+
+        .input-wrapper .unit {
+            position: absolute;
+            top: 50%;
+            right: 12px;
+            transform: translateY(-50%);
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+        }
+        
+        input[type="number"], input[type="text"] {
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border: 1px solid var(--panel-border);
+            border-radius: 8px;
+            padding: 12px 36px 12px 12px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            font-family: inherit;
+            transition: border-color var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
+            box-sizing: border-box;
+            -moz-appearance: textfield; /* Firefox */
+        }
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+          -webkit-appearance: none;
+          margin: 0;
+        }
+
+        input[type="number"]:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .checkbox-label input {
+            display: none;
+        }
+        .checkbox-label .checkbox-custom {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--text-secondary);
+            border-radius: 4px;
+            margin-right: 0.75rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all var(--transition-speed) ease;
+        }
+        .checkbox-label .checkbox-custom svg {
+            transform: scale(0);
+            transition: transform var(--transition-speed) ease;
+        }
+        .checkbox-label input:checked + .checkbox-custom {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+        .checkbox-label input:checked + .checkbox-custom svg {
+            transform: scale(1);
+        }
+
+        /* Export Section */
+        .export-section {
+            margin-top: 2rem;
+            border-top: 1px solid var(--panel-border);
+            padding-top: 2rem;
+        }
+
+        .download-btn {
+            width: 100%;
+            background: var(--accent-color);
+            border: none;
+            border-radius: 8px;
+            padding: 1rem;
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .download-btn:hover {
+            background: var(--accent-color-hover);
+            box-shadow: 0 5px 15px rgba(59, 130, 246, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .download-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Preview Area */
+        .preview-area {
+            border-radius: var(--border-radius);
+            background: rgba(0,0,0,0.2);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .preview-wrapper {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+            transition: background var(--transition-speed) ease;
+        }
+        .preview-wrapper.checkerboard {
+            background-image:
+                linear-gradient(45deg, #444 25%, transparent 25%),
+                linear-gradient(-45deg, #444 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #444 75%),
+                linear-gradient(-45deg, transparent 75%, #444 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        #preview-canvas {
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            box-sizing: border-box;
+            max-width: 100%;
+            max-height: 100%;
+            transition: width 0.4s ease, height 0.4s ease;
+        }
+
+        .preview-info {
+            text-align: center;
+            margin-top: 1.25rem;
+            color: var(--text-secondary);
+            font-size: 0.875rem;
+            height: 2.5em; /* Reserve space to prevent layout shift */
+        }
+        
+        .preview-info strong {
+            color: var(--text-primary);
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translate(-50%, 150%);
+            background: #28a745;
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px var(--shadow-color);
+            z-index: 1000;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        .toast.show {
+            transform: translate(-50%, 0);
+        }
+        .toast a {
+            color: white;
+            text-decoration: underline;
+            font-size: 0.875rem;
+            opacity: 0.8;
+            margin-left: 0.5rem;
+            cursor: pointer;
+        }
+        .toast a:hover {
+            opacity: 1;
+        }
+
+        /* RTL Support */
+        [dir="rtl"] {
+            direction: rtl;
+        }
+        [dir="rtl"] .checkbox-label .checkbox-custom {
+            margin-right: 0;
+            margin-left: 0.75rem;
+        }
+        [dir="rtl"] .input-wrapper .unit {
+            right: auto;
+            left: 12px;
+        }
+        [dir="rtl"] input[type="number"], [dir="rtl"] input[type="text"] {
+             padding: 12px 12px 12px 36px;
+        }
+        [dir="rtl"] .header-controls {
+            right: auto;
+            left: 1.5rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 900px) {
+            .main-panel {
+                grid-template-columns: 1fr;
+            }
+            .preview-area {
+                min-height: 300px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            body { padding: 1rem 0.5rem; }
+            .app-header h1 { font-size: 2rem; }
+            .presets-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 1rem; }
+            .preset-card { padding: 1rem; }
+            .main-panel { padding: 1.5rem; }
+            .header-controls { top: 0.5rem; right: 0.5rem; }
+            [dir="rtl"] .header-controls { right: auto; left: 0.5rem; }
+        }
+        
+        @media (max-width: 480px) {
+            .presets-grid { grid-template-columns: 1fr 1fr; }
+            .size-inputs { flex-direction: column; }
+            .stepper { flex-direction: column; align-items: center; text-align: center; gap: 1rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-controls">
+        <button class="info-button" aria-label="Help">
+            ?
+            <span class="tooltip">This app generates a blank transparent PNG at any size. No images are uploaded or required.</span>
+        </button>
+        <button class="rtl-toggle" aria-label="Toggle Right-to-Left" title="Toggle RTL/LTR">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16"/><path d="m14 6-6 6 6 6"/><path d="M4 18v-2a4 4 0 0 1 4-4h4"/></svg>
+        </button>
+    </div>
+
+    <div class="container">
+        <header class="app-header">
+            <h1>Transparent PNG Studio</h1>
+            <p class="tagline">Create transparent PNGs in any size — instantly.</p>
+        </header>
+
+        <div class="stepper">
+            <span><span class="step-number">1</span> Choose Size</span>
+            <span><span class="step-number">2</span> Preview</span>
+            <span><span class="step-number">3</span> Download</span>
+        </div>
+
+        <section class="presets-grid" id="presets-grid"></section>
+
+        <section class="main-panel">
+            <div class="controls">
+                <h2>Custom Size</h2>
+                <div class="form-group">
+                    <label for="width-input">Dimensions</label>
+                    <div class="size-inputs">
+                        <div class="input-wrapper">
+                            <input type="number" id="width-input" min="1" max="10000" placeholder="Width">
+                            <span class="unit">px</span>
+                        </div>
+                        <div class="input-wrapper">
+                            <input type="number" id="height-input" min="1" max="10000" placeholder="Height">
+                            <span class="unit">px</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="checkbox-group">
+                    <label class="checkbox-label" for="retina-checkbox">
+                        <input type="checkbox" id="retina-checkbox">
+                        <span class="checkbox-custom">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </span>
+                        Retina export (2×)
+                    </label>
+                    <label class="checkbox-label" for="checkerboard-checkbox">
+                        <input type="checkbox" id="checkerboard-checkbox" checked>
+                         <span class="checkbox-custom">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                        </span>
+                        Checkerboard preview
+                    </label>
+                </div>
+                
+                <div class="export-section">
+                    <div class="form-group">
+                        <label for="filename-input">Filename</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="filename-input">
+                            <span class="unit">.png</span>
+                        </div>
+                    </div>
+                    <button class="download-btn" id="download-btn">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Download PNG
+                    </button>
+                </div>
+            </div>
+
+            <div class="preview-area">
+                <div class="preview-wrapper" id="preview-wrapper">
+                    <canvas id="preview-canvas"></canvas>
+                </div>
+                <div class="preview-info" id="preview-info">
+                    Select a preset or enter a custom size to begin.
+                </div>
+            </div>
+        </section>
+        
+        <div class="toast" id="toast">
+            <span>✅ Saved!</span>
+            <div id="toast-actions"></div>
+        </div>
+
+    </div>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        // --- CONFIG & STATE ---
+        const PRESETS = [
+            { name: 'YouTube Shorts', w: 1080, h: 1920 },
+            { name: 'TikTok', w: 1080, h: 1920 },
+            { name: 'Instagram Story', w: 1080, h: 1920 },
+            { name: 'Instagram Post', w: 1080, h: 1080 },
+            { name: 'Instagram Profile', w: 320, h: 320 },
+            { name: 'Facebook Cover', w: 820, h: 312 },
+            { name: 'Twitter Header', w: 1500, h: 500 },
+            { name: 'Pinterest Pin', w: 1000, h: 1500 },
+            { name: 'Custom', w: 512, h: 512, isCustom: true },
+        ];
+
+        let state = {
+            width: 0,
+            height: 0,
+            isRetina: false,
+            showCheckerboard: true,
+            selectedPresets: new Set(),
+            lastFilename: ''
+        };
+
+        // --- DOM ELEMENTS ---
+        const DOMElements = {
+            presetsGrid: document.getElementById('presets-grid'),
+            widthInput: document.getElementById('width-input'),
+            heightInput: document.getElementById('height-input'),
+            retinaCheckbox: document.getElementById('retina-checkbox'),
+            checkerboardCheckbox: document.getElementById('checkerboard-checkbox'),
+            previewWrapper: document.getElementById('preview-wrapper'),
+            previewCanvas: document.getElementById('preview-canvas'),
+            previewInfo: document.getElementById('preview-info'),
+            filenameInput: document.getElementById('filename-input'),
+            downloadBtn: document.getElementById('download-btn'),
+            rtlToggle: document.querySelector('.rtl-toggle'),
+            toast: document.getElementById('toast'),
+            toastActions: document.getElementById('toast-actions'),
+        };
+
+        // --- INITIALIZATION ---
+        function init() {
+            renderPresets();
+            setupEventListeners();
+            DOMElements.checkerboardCheckbox.checked = state.showCheckerboard;
+            updatePreviewWrapper();
+        }
+
+        // --- RENDER FUNCTIONS ---
+
+        /**
+         * Renders the preset cards into the grid.
+         */
+        function renderPresets() {
+            DOMElements.presetsGrid.innerHTML = '';
+            PRESETS.forEach(preset => {
+                const card = document.createElement('div');
+                card.className = 'preset-card';
+                card.dataset.name = preset.name;
+                
+                const aspectRatio = preset.h / preset.w;
+                const thumbWidth = 60;
+                const thumbHeight = thumbWidth * aspectRatio;
+
+                card.innerHTML = `
+                    <div class="check-icon">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    </div>
+                    <div class="thumbnail" style="width:${thumbWidth}px; height:${Math.min(thumbHeight, 60)}px;"></div>
+                    <h3>${preset.name}</h3>
+                    <p>${preset.isCustom ? 'Your size' : `${preset.w} × ${preset.h} px`}</p>
+                `;
+                DOMElements.presetsGrid.appendChild(card);
+            });
+        }
+        
+        /**
+         * Updates all UI elements based on the current state.
+         */
+        function updateUI() {
+            // Update inputs
+            DOMElements.widthInput.value = state.width || '';
+            DOMElements.heightInput.value = state.height || '';
+            DOMElements.retinaCheckbox.checked = state.isRetina;
+            
+            // Update filename
+            if (state.width > 0 && state.height > 0) {
+                 DOMElements.filenameInput.value = `transparent-${state.width}x${state.height}`;
+            } else {
+                 DOMElements.filenameInput.value = '';
+            }
+
+            // Update presets visual state
+            document.querySelectorAll('.preset-card').forEach(card => {
+                card.classList.toggle('selected', state.selectedPresets.has(card.dataset.name));
+            });
+            
+            // Update download button text
+            const count = state.selectedPresets.size;
+            const btnText = DOMElements.downloadBtn.childNodes[2];
+            if (count > 1) {
+                btnText.textContent = ` Download ${count} Files (.zip)`;
+            } else {
+                btnText.textContent = ' Download PNG';
+            }
+
+            drawPreview();
+        }
+
+        /**
+         * Draws the canvas preview based on current state.
+         */
+        function drawPreview() {
+            const canvas = DOMElements.previewCanvas;
+            const info = DOMElements.previewInfo;
+
+            if (state.width <= 0 || state.height <= 0) {
+                canvas.style.width = '0px';
+                canvas.style.height = '0px';
+                info.innerHTML = 'Select a preset or enter a custom size to begin.';
+                return;
+            }
+
+            const wrapper = DOMElements.previewWrapper;
+            const maxWidth = wrapper.clientWidth - 40; // 20px padding on each side
+            const maxHeight = wrapper.clientHeight - 40;
+            
+            const aspectRatio = state.height / state.width;
+            let displayW = maxWidth;
+            let displayH = displayW * aspectRatio;
+
+            if (displayH > maxHeight) {
+                displayH = maxHeight;
+                displayW = displayH / aspectRatio;
+            }
+
+            canvas.style.width = `${displayW}px`;
+            canvas.style.height = `${displayH}px`;
+            
+            const exportW = state.width * (state.isRetina ? 2 : 1);
+            const exportH = state.height * (state.isRetina ? 2 : 1);
+            
+            // Set canvas resolution. Not strictly needed for a blank canvas, but good practice.
+            canvas.width = exportW;
+            canvas.height = exportH;
+            
+            info.innerHTML = `Preview: <strong>${state.width} × ${state.height}px</strong>`;
+            if (state.isRetina) {
+                info.innerHTML += ` &nbsp; | &nbsp; Exporting at <strong>${exportW} × ${exportH}px</strong> (2×)`;
+            }
+        }
+        
+        function updatePreviewWrapper() {
+            DOMElements.previewWrapper.classList.toggle('checkerboard', state.showCheckerboard);
+        }
+
+        // --- EVENT HANDLERS ---
+        
+        function setupEventListeners() {
+            // Preset card clicks
+            DOMElements.presetsGrid.addEventListener('click', handlePresetClick);
+            
+            // Input changes
+            DOMElements.widthInput.addEventListener('input', handleCustomSizeChange);
+            DOMElements.heightInput.addEventListener('input', handleCustomSizeChange);
+            
+            // Checkbox changes
+            DOMElements.retinaCheckbox.addEventListener('change', (e) => {
+                state.isRetina = e.target.checked;
+                updateUI();
+            });
+            DOMElements.checkerboardCheckbox.addEventListener('change', (e) => {
+                state.showCheckerboard = e.target.checked;
+                updatePreviewWrapper();
+            });
+            
+            // Download button
+            DOMElements.downloadBtn.addEventListener('click', handleDownload);
+            
+            // RTL Toggle
+            DOMElements.rtlToggle.addEventListener('click', toggleRTL);
+
+            // Window resize
+            window.addEventListener('resize', drawPreview);
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', handleKeyboardShortcuts);
+        }
+
+        function handlePresetClick(e) {
+            const card = e.target.closest('.preset-card');
+            if (!card) return;
+
+            const presetName = card.dataset.name;
+            const preset = PRESETS.find(p => p.name === presetName);
+
+            if (e.shiftKey) {
+                // Multi-select logic
+                if (state.selectedPresets.has(presetName)) {
+                    state.selectedPresets.delete(presetName);
+                } else {
+                    state.selectedPresets.add(presetName);
+                }
+            } else {
+                // Single-select logic
+                state.selectedPresets.clear();
+                state.selectedPresets.add(presetName);
+            }
+            
+            if (!preset.isCustom) {
+                state.width = preset.w;
+                state.height = preset.h;
+            }
+
+            if (preset.isCustom && state.width === 0 && state.height === 0) {
+                 state.width = preset.w;
+                 state.height = preset.h;
+            }
+            
+            if(state.selectedPresets.size === 1 && preset.isCustom) {
+                 DOMElements.widthInput.focus();
+            }
+
+            updateUI();
+        }
+
+        function handleCustomSizeChange() {
+            state.width = Math.max(1, parseInt(DOMElements.widthInput.value, 10)) || 0;
+            state.height = Math.max(1, parseInt(DOMElements.heightInput.value, 10)) || 0;
+            
+            // Switch selection to 'Custom' if user types a size
+            state.selectedPresets.clear();
+            state.selectedPresets.add('Custom');
+
+            updateUI();
+        }
+        
+        function handleKeyboardShortcuts(e) {
+             if (document.activeElement.tagName === 'INPUT') return;
+
+             switch(e.key.toLowerCase()) {
+                case 'g':
+                    e.preventDefault();
+                    handleDownload();
+                    break;
+                case '/':
+                    e.preventDefault();
+                    DOMElements.widthInput.focus();
+                    DOMElements.widthInput.select();
+                    break;
+                case 'r':
+                    e.preventDefault();
+                    toggleRTL();
+                    break;
+            }
+        }
+
+        // --- CORE FUNCTIONALITY ---
+        
+        /**
+         * Generates a blank transparent canvas blob of given dimensions.
+         * @returns {Promise<Blob>} A promise that resolves with the image blob.
+         */
+        function generatePNG(width, height, isRetina) {
+            return new Promise(resolve => {
+                const tempCanvas = document.createElement('canvas');
+                tempCanvas.width = width * (isRetina ? 2 : 1);
+                tempCanvas.height = height * (isRetina ? 2 : 1);
+
+                tempCanvas.toBlob(blob => {
+                    resolve(blob);
+                }, 'image/png');
+            });
+        }
+        
+        async function handleDownload() {
+            if (state.selectedPresets.size === 0) return;
+            
+            const downloads = [];
+            state.selectedPresets.forEach(name => {
+                const preset = PRESETS.find(p => p.name === name);
+                let w, h;
+                if (preset.isCustom) {
+                    w = state.width;
+                    h = state.height;
+                } else {
+                    w = preset.w;
+                    h = preset.h;
+                }
+                if (w > 0 && h > 0) {
+                    downloads.push({
+                        width: w,
+                        height: h,
+                        filename: `transparent-${w}x${h}.png`
+                    });
+                }
+            });
+
+            if (downloads.length === 0) return;
+
+            if (downloads.length > 1) {
+                // Batch download as ZIP
+                const zip = new JSZip();
+                for (const item of downloads) {
+                    const blob = await generatePNG(item.width, item.height, state.isRetina);
+                    zip.file(item.filename, blob);
+                }
+                const content = await zip.generateAsync({ type: "blob" });
+                const finalFilename = "transparent_pngs.zip";
+                downloadBlob(content, finalFilename);
+                showToast(finalFilename);
+            } else {
+                // Single download
+                const item = downloads[0];
+                const finalFilename = DOMElements.filenameInput.value ? `${DOMElements.filenameInput.value}.png` : item.filename;
+                const blob = await generatePNG(item.width, item.height, state.isRetina);
+                downloadBlob(blob, finalFilename);
+                showToast(finalFilename, blob);
+            }
+        }
+
+        /**
+         * Triggers the download of a blob.
+         */
+        function downloadBlob(blob, filename) {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // --- UI & UTILS ---
+
+        function showToast(filename, blob = null) {
+            const toast = DOMElements.toast;
+            DOMElements.toastActions.innerHTML = '';
+
+            const copyLink = document.createElement('a');
+            copyLink.textContent = 'Copy filename';
+            copyLink.onclick = () => navigator.clipboard.writeText(filename);
+            
+            DOMElements.toastActions.appendChild(copyLink);
+            
+            if (blob) {
+                const openLink = document.createElement('a');
+                openLink.textContent = 'Open in new tab';
+                openLink.onclick = () => {
+                    const url = URL.createObjectURL(blob);
+                    window.open(url, '_blank');
+                };
+                DOMElements.toastActions.appendChild(openLink);
+            }
+
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 4000);
+        }
+        
+        function toggleRTL() {
+            const html = document.documentElement;
+            if (html.dir === 'rtl') {
+                html.dir = 'ltr';
+            } else {
+                html.dir = 'rtl';
+            }
+        }
+        
+        // --- START THE APP ---
+        init();
+    });
+    </script>
+</body>
+</html>
