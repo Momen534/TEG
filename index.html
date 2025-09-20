@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transparent PNG Studio</title>
+    <title>TEG - Transparent Image Generator by Eng Momen Hassan</title>
     
     <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -515,6 +515,29 @@
             .size-inputs { flex-direction: column; }
             .stepper { flex-direction: column; align-items: center; text-align: center; gap: 1rem; }
         }
+
+        /* Footer */
+        .app-footer {
+            margin-top: 4rem;
+            text-align: center;
+            color: var(--text-secondary);
+            padding-bottom: 2rem;
+        }
+
+        .author-pic {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid var(--panel-border);
+            margin-bottom: 1rem;
+            object-fit: cover;
+            box-shadow: 0 5px 15px var(--shadow-color);
+        }
+
+        .app-footer p {
+            margin: 0;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
@@ -531,8 +554,8 @@
 
     <div class="container">
         <header class="app-header">
-            <h1>Transparent PNG Studio</h1>
-            <p class="tagline">Create transparent PNGs in any size — instantly.</p>
+            <h1>TEG</h1>
+            <p class="tagline">Transparent Image Generator by Eng Momen Hassan</p>
         </header>
 
         <div class="stepper">
@@ -608,6 +631,11 @@
         </div>
 
     </div>
+    
+    <footer class="app-footer">
+        <img src="images/1.jpg" onerror="this.onerror=null;this.src='https://placehold.co/80x80/0b1120/e2e8f0?text=MH';" alt="Momen Hassan" class="author-pic">
+        <p>Created by Eng. Momen Hassan</p>
+    </footer>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -988,3 +1016,4 @@
     </script>
 </body>
 </html>
+
